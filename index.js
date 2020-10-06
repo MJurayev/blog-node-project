@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
 const winston = require('winston');
-require('./startup/logging')();
+// require('./startup/logging')();
 require('./startup/routes')(app);
 require('./startup/db')();
 require('./startup/config')();
