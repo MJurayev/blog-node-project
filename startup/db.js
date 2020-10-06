@@ -7,5 +7,7 @@ module.exports = function () {
         .then(() => {
             winston.debug('MongoDBga ulanish hosil qilindi...');
         });
+    mongoose.set('useCreateIndex', true)
     mongoose.set('useFindAndModify', false);
+    
 }

@@ -3,22 +3,16 @@ const router = express.Router();
 const {User, validator} = require("../models/User.model");
 const _ = require("lodash");
 const auth = require("../middleware/auth");
+const bcrypt = require("bcrypt")
 router.use(express.json());
+// const cors = require('cors');
 
 //Get query /users:GET
-router.get('/',auth, async (req, res)=>{
+router.get('/', auth, async (req, res)=>{
     const users =await User.find()
     .sort({login:1, isAdmin:1}); 
-    res.send(users);
+    return res.status(200).json(users);
 });
-
-//for POST query /users:POST data:{login:req.body.login,
-        // password:examplepassword,
-        // email:exampleemail,
-        // imgUrl:exampleimgUrl,
-        // isAdmin:false
-    //      password_repeat:password
-//                  }
 
 router.post('/', async (req, res)=>{
     // console.log(req.body);
@@ -32,21 +26,19 @@ router.post('/', async (req, res)=>{
     user =await User.findOne({login:req.body.login});
     if(user)
         return res.status(400).send("Bu login avval ro'yxatdan o'tgan");
-    user  = new User({
-        login:req.body.login,
-        password:req.body.password,
-        email:req.body.email,
-        imgUrl:req.body.imgUrl,
-        isAdmin:false
-    });
-    
-    await user.save();
-    console.log("Foydalanuvchi qo'shildi");
-    return res.send(_.pick(user, ['_id','login', 'email', 'imgUrl', 'isAdmin' ]));
+    user = new User(_.pick(req.body, ['login', 'email', 'password', 'isAdmin', 'imgUrl']));
+  const salt = await bcrypt.genSalt();
+  user.password = await bcrypt.hash(user.password, salt);
+
+  await user.save();
+
+  console.log("Foydalanuvchi qo'shildi");
+  res.send(_.pick(user, ['_id', 'login', 'email', 'isAdmin']));
+
 });
 
 //for delete method /users/id
-router.delete('/:id',async(req, res)=>{
+router.delete('/:id',auth, async(req, res)=>{
     if(!(await User.findOne({_id:{$eq:req.params.id}})))
         return res.status(404).send("User topilmadi");
 
@@ -54,16 +46,7 @@ router.delete('/:id',async(req, res)=>{
         return res.send(user);
 });
 
-//for PUT query /users/id :PUT data:{
-    //      login:req.body.login,
-        // password:examplepassword,
-        // email:exampleemail,
-        // imgUrl:exampleimgUrl,
-        // isAdmin:false
-    //      password_repeat:password
-//                  }
-
-router.put('/:id',  async(req, res)=>{
+router.put('/:id', auth, async(req, res)=>{
     const {error} = validator(req.body);
     if(error)
         return res.status(400).send(error.details[0].message);
@@ -80,12 +63,21 @@ router.put('/:id',  async(req, res)=>{
         imgUrl:req.body.imgUrl,
         isAdmin:false,
         updated_at:Date.now()
-    });
+    }, {new :true});
     if(user)
-        return res.send(_.pick(user, ['_id','login', 'email', 'imgUrl', 'isAdmin' ]));
+         res.send(_.pick(user, ['_id','login', 'email', 'imgUrl', 'isAdmin' ]));
         return res.send('Foydalanuvchini yangilab bo\'lmadi');
 });
 
 
-
+router.get('/:id',auth, async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(404).send('Yaroqsiz id');
+  
+    let user = await User.findById(req.params.id);
+    if (!user)
+      return res.status(404).send('Berilgan IDga teng bo\'lgan foydalanuvchi topilmadi');
+  
+    res.send(user);
+  });
 module.exports = router;

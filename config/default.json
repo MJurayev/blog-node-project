@@ -1,3 +1,4 @@
 {
-    "jwtPrivateKey":"21Admin06"
+    "jwtPrivateKey":"21Admin06",
+    "db":"mongodb://localhost/MData"
 }
